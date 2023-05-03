@@ -14,7 +14,7 @@ Level_meta = {
 }
 
 -- tiles should always be square, so we only need one value
-local levelTileSize = 8
+Level.tileSize = 8
 
 --****************
 --[[
@@ -61,9 +61,9 @@ function Level:draw()
 			local tileData = levelTiles[self:getTile(x, y)]
 			if tileData and tileData.graphic then
 				if tileData.quad then
-					love.graphics.draw(tileData.graphic, tileData.quad, (x - 1) * levelTileSize, (y - 1) * levelTileSize)
+					love.graphics.draw(tileData.graphic, tileData.quad, (x - 1) * Level.tileSize, (y - 1) * Level.tileSize)
 				else
-					love.graphics.draw(tileData.graphic, (x - 1) * levelTileSize, (y - 1) * levelTileSize)
+					love.graphics.draw(tileData.graphic, (x - 1) * Level.tileSize, (y - 1) * Level.tileSize)
 				end
 			end
 		end
@@ -71,5 +71,9 @@ function Level:draw()
 end
 
 --****************
+
+function Level.coordsToTilePosition(x, y)
+	return math.floor(x / 8 + 1), math.floor(y / 8 + 1)
+end
 
 return setmetatable(Level, Level)
