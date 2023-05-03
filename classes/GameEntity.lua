@@ -48,40 +48,23 @@ function GameEntity:destroy()
 end
 
 function GameEntity:collidesWithLevel(xOffset, yOffset)
-	xOffset = xOffset or 0
-	yOffset = yOffset or 0
-	return currentLevel:getTile(Level.coordsToTilePosition(self.x + xOffset, self.y + yOffset)) ~= "air"
+	return currentLevel:getTile(Level.coordsToTilePosition(self.x + self.vx + (xOffset or 0), self.y + self.vy + (yOffset or 0))) ~= "air"
 end
 
 -- update single object
 function GameEntity:update(dtMod)
 	self.vy = self.vy + 0.3
 	
-	-- collision handling, optimize later
-	local collided
-	repeat
-		collided = false
-		if self:collidesWithLevel(-3.5, 4) or self:collidesWithLevel(3.5, 4) then
-			collided = true
-			self.vy = 0
-			self.y = self.y - 0.1
+	-- collision handling
+	if self:collidesWithLevel(-3.9, 4) or self:collidesWithLevel(3.9, 4) then
+		self.vy = 0
+		while self:collidesWithLevel(-4, 4) or self:collidesWithLevel(4, 4) do
+			self.y = self.y - 0.01
 		end
-		if self:collidesWithLevel(-3.5, -4) or self:collidesWithLevel(3.5, -4) then
-			collided = true
-			self.vy = 0
-			self.y = self.y + 0.1
+		while not (self:collidesWithLevel(-4, 4) or self:collidesWithLevel(4, 4)) do
+			self.y = self.y + 0.01
 		end
-		if self:collidesWithLevel(-4, -3.5) or self:collidesWithLevel(-4, 3.5) then
-			collided = true
-			self.vx = 0
-			self.x = self.x + 0.1
-		end
-		if self:collidesWithLevel(4, -3.5) or self:collidesWithLevel(4, 3.5) then
-			collided = true
-			self.vx = 0
-			self.x = self.x - 0.1
-		end
-	until not collided
+	end
 	
 	self.x = self.x + self.vx * dtMod
 	self.y = self.y + self.vy * dtMod
@@ -111,7 +94,7 @@ function GameEntity.drawAll()
 	end
 end
 
--- this scope needs to know the current level for collision handling
+-- this scope needs to know the current level for collision detection
 function GameEntity.setLevel(level)
 	currentLevel = level
 end

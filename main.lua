@@ -20,7 +20,7 @@ local player = GameEntity{x = 128, y = -64}
 local currentLevel = Level()
 for y = 1, currentLevel.size.h do
 	for x = 1, currentLevel.size.w do
-		if math.floor(x/4) == y then
+		if math.floor(x/8) == y then
 			currentLevel:setTile(x, y, "grass10")
 		end
 	end
@@ -34,7 +34,10 @@ function love.update(dt)
 	local dtMod = dt * 60
 	
 	player.vx = player.vx + (boolAsInt[love.keyboard.isDown("d")] - boolAsInt[love.keyboard.isDown("a")]) * 0.2 * dtMod
-	player.vy = player.vy + (boolAsInt[love.keyboard.isDown("s")] - boolAsInt[love.keyboard.isDown("w")]) * 0.2 * dtMod
+	
+	if love.keyboard.isDown("space") and player.vy == 0 then
+		player.vy = -8
+	end
 	
 	cam.targetX = player.x
 	cam.targetY = player.y
@@ -59,8 +62,6 @@ function love.keypressed(key)
 		love.event.push("quit") -- close game
 	elseif key == "f4" then
 		love.window.setFullscreen(not love.window.getFullscreen()) -- enter/leave fullscreen
-	elseif key == "space" then
-		player.vy = player.vy - 8
 	end
 end
 

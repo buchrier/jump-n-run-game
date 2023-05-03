@@ -40,14 +40,13 @@ function Level:__call(parameters) -- constructor function
 end
 
 function Level:getTile(x, y)
-	x = x % self.size.w + 1
-	y = y % self.size.h + 1
+	if x < 1 or y < 1 or x > self.size.w or y > self.size.h then return "air" end
 	return self.tiles[(y - 1) * self.size.w + x]
 end
 
 function Level:setTile(x, y, value)
-	x = x % self.size.w + 1
-	y = y % self.size.h + 1
+	x = x % self.size.w
+	y = y % self.size.h
 	self.tiles[(y - 1) * self.size.w + x] = value
 end
 
