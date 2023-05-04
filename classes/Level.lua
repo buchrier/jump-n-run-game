@@ -54,15 +54,66 @@ function Level:update(dtMod)
 	
 end
 
-function Level:draw()
-	for y = 1, self.size.h do
-		for x = 1, self.size.w do
+function Level:draw(viewportX, viewportY, viewportWidth, viewportHeight)
+	local simplify = math.floor(math.sqrt(viewportWidth / 2^9) * 3) - 3
+	simplify = simplify < 1 and 1 or simplify
+	
+	local view_1x = math.floor(viewportX / 8 + simplify)
+	local view_1y = math.floor(viewportY / 8 + simplify)
+	local view_2x = math.floor(viewportX / 8) + math.floor(viewportWidth / 8)
+	local view_2y = math.floor(viewportY / 8) + math.floor(viewportHeight / 8)
+	
+	for y = view_1y, view_2y, simplify do
+		for x = view_1x, view_2x, simplify do
 			local tileData = levelTiles[self:getTile(x, y)]
 			if tileData and tileData.graphic then
-				if tileData.quad then
-					love.graphics.draw(tileData.graphic, tileData.quad, (x - 1) * Level.tileSize, (y - 1) * Level.tileSize)
-				else
+				if not tileData.quads then
 					love.graphics.draw(tileData.graphic, (x - 1) * Level.tileSize, (y - 1) * Level.tileSize)
+				else
+					local neighbors = {}
+					for _x = -1, 1 do
+						neighbors[_x] = {}
+						for _y = -1, 1 do
+							neighbors[_x][_y] = self:getTile(x + _x * simplify, y + _y * simplify) == self:getTile(x, y)
+						end
+					end
+					
+					local usedQuad
+					if neighbors[0][1] and neighbors[0][-1] and neighbors[1][0] and neighbors[-1][0] then
+						usedQuad = tileData.quads.center
+					elseif neighbors[0][1] and neighbors[0][-1] and neighbors[1][0] then
+						usedQuad = tileData.quads.sideLeft
+					elseif neighbors[0][1] and neighbors[0][-1] and neighbors[-1][0] then
+						usedQuad = tileData.quads.sideRight
+					elseif neighbors[1][0] and neighbors[-1][0] and neighbors[0][1] then
+						usedQuad = tileData.quads.sideTop
+					elseif neighbors[1][0] and neighbors[-1][0] and neighbors[0][-1] then
+						usedQuad = tileData.quads.sideBottom
+					elseif neighbors[1][0] and neighbors[0][1] then
+						usedQuad = tileData.quads.cornerTopLeft
+					elseif neighbors[-1][0] and neighbors[0][1] then
+						usedQuad = tileData.quads.cornerTopRight
+					elseif neighbors[1][0] and neighbors[0][-1] then
+						usedQuad = tileData.quads.cornerBottomLeft
+					elseif neighbors[-1][0] and neighbors[0][-1] then
+						usedQuad = tileData.quads.cornerBottomRight
+					elseif neighbors[1][0] and neighbors[-1][0] then
+						usedQuad = tileData.quads.colHorzMiddle
+					elseif neighbors[0][1] and neighbors[0][-1] then
+						usedQuad = tileData.quads.colVertCenter
+					elseif neighbors[1][0] then
+						usedQuad = tileData.quads.colHorzLeft
+					elseif neighbors[-1][0] then
+						usedQuad = tileData.quads.colHorzRight
+					elseif neighbors[0][1] then
+						usedQuad = tileData.quads.colVertTop
+					elseif neighbors[0][-1] then
+						usedQuad = tileData.quads.colVertBottom
+					else
+						usedQuad = tileData.quads.single
+					end
+					
+					love.graphics.draw(tileData.graphic, usedQuad, (x - 1) * Level.tileSize, (y - 1) * Level.tileSize, 0, simplify, simplify)
 				end
 			end
 		end

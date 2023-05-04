@@ -17,12 +17,10 @@ local cam = {x = 0, y = 0, targetX = 0, targetY = 0, z = 1}
 
 local player = GameEntity{x = 128, y = -64}
 
-local currentLevel = Level()
+local currentLevel = Level{width = 2^9, height = 2^9}
 for y = 1, currentLevel.size.h do
 	for x = 1, currentLevel.size.w do
-		if math.floor(x/8) == y then
-			currentLevel:setTile(x, y, "grass10")
-		end
+		currentLevel:setTile(x, y, love.math.noise(x * 0.01, y * 0.01) > 0.5 and "grass" or "air")
 	end
 end
 GameEntity.setLevel(currentLevel)
@@ -35,15 +33,15 @@ function love.update(dt)
 	
 	player.vx = player.vx + (boolAsInt[love.keyboard.isDown("d")] - boolAsInt[love.keyboard.isDown("a")]) * 0.2 * dtMod
 	
-	if love.keyboard.isDown("space") and player.vy == 0 then
+	if love.keyboard.isDown("space") and (player:collidesWithLevel(-3, 4) or player:collidesWithLevel(3, 4)) then
 		player.vy = -8
 	end
 	
 	cam.targetX = player.x
 	cam.targetY = player.y
 	
-	cam.x = cam.x + (cam.targetX - cam.x) * 3 * dt
-	cam.y = cam.y + (cam.targetY - cam.y) * 3 * dt
+	cam.x = cam.x + (cam.targetX - cam.x) * 5 * dt
+	cam.y = cam.y + (cam.targetY - cam.y) * 5 * dt
 	
 	if love.keyboard.isDown("+") then
 		cam.z = cam.z * (1.1 ^ dtMod)
@@ -82,8 +80,11 @@ function love.draw()
 		love.graphics.translate(-cam.x, -cam.y)
 		
 		love.graphics.setColor(1, 1, 1)
-		currentLevel:draw()
+		currentLevel:draw(cam.x - gameCanvasSize.w/2 / cam.z, cam.y - gameCanvasSize.h/2 / cam.z, gameCanvasSize.w / cam.z + 32, gameCanvasSize.h / cam.z + 32)
 		GameEntity.drawAll()
+		
+		love.graphics.setColor(1, 0, 0)
+		love.graphics.line(player.x, player.y, player.x + player.vx * 4, player.y + player.vy * 4)
 		
 		love.graphics.origin()
 	end)
