@@ -48,31 +48,80 @@ function GameEntity:destroy()
 end
 
 function GameEntity:collidesWithLevel(xOffset, yOffset)
-	return currentLevel:getTile(Level.coordsToTilePosition(self.x + self.vx + (xOffset or 0), self.y + self.vy + (yOffset or 0))) ~= "air"
+	return currentLevel:getTile(Level.coordsToTilePosition(self.x + (xOffset or 0), self.y + (yOffset or 0))) ~= "air"
+end
+
+function GameEntity:checkCollisions()
+	local limitX = 1 / math.abs(self.vy)
+	limitX = limitX < 3.5 and limitX or 3.5
+	local limitY = 1 / math.abs(self.vx)
+	limitY = limitY < 3.5 and limitY or 3.5
+	local down	= self:collidesWithLevel(-limitX, 4)	or self:collidesWithLevel(limitX, 4)
+	local right	= self:collidesWithLevel(4, -limitY)	or self:collidesWithLevel(4, limitY)
+	local up	= self:collidesWithLevel(-limitX, -4)	or self:collidesWithLevel(limitX, -4)
+	local left	= self:collidesWithLevel(-4, -limitY)	or self:collidesWithLevel(-4, limitY)
+	return down, right, up, left
 end
 
 -- update single object
-function GameEntity:update(dtMod)
+function GameEntity:update(dtMod)	
+	-- collision detection/handling:
+	local doRecheck
+	local checkCount = 0
+	repeat
+		doRecheck = false
+		local down, right, up, left = self:checkCollisions()
+		
+		local handlers = {
+			{vel = self.vy > 0 and 0 or self.vy, fct = function()
+				if down then
+					self.vy = self.vy > 0 and 0 or self.vy
+					self.y = self.y - 0.1
+					doRecheck = true
+				end
+			end},
+			{vel = self.vx > 0 and 0 or self.vx, fct = function()
+				if right then
+					self.vx = self.vx > 0 and 0 or self.vx
+					self.x = self.x - 0.1
+					doRecheck = true
+				end
+			end},
+			{vel = self.vy < 0 and 0 or self.vy, fct = function()
+				if up then
+					self.vy = self.vy < 0 and 0 or self.vy
+					self.y = self.y + 0.1
+					doRecheck = true
+				end
+			end},
+			{vel = self.vx < 0 and 0 or self.vx, fct = function()
+				if left then
+					self.vx = self.vx < 0 and 0 or self.vx
+					self.x = self.x + 0.1
+					doRecheck = true
+				end
+			end}
+		}
+		
+		table.sort(handlers, function(a, b)
+			return math.abs(a.vel) > math.abs(b.vel)
+		end)
+		
+		handlers[1].fct()
+		handlers[2].fct()
+		handlers[3].fct()
+		handlers[4].fct()
+		
+		checkCount = checkCount + 1
+	until (not doRecheck) or checkCount > 100
+	
 	self.vy = self.vy + 0.3 * dtMod
 	
-	-- collision detection/handling:
-	--[[ old code
-	if self:collidesWithLevel(-4, -3) or self:collidesWithLevel(-4, 3) then -- left collision
-		self.vx = 0
-		self.x = math.floor(self.x / 8) * 8 + 4
-	end
-	if self:collidesWithLevel(4, -3) or self:collidesWithLevel(4, 3) then -- right collision
-		self.vx = 0
-		self.x = math.floor(self.x / 8) * 8 + 4
-	end
-	if self:collidesWithLevel(-3, 4) or self:collidesWithLevel(3, 4) then -- down collision
-		self.vy = 0
-		self.y = math.floor(self.y / 8) * 8 + 4
-	end
-	if  then -- up collision
-		self.vy = 0
-		self.y = math.floor(self.y / 8) * 8 + 4
-	end
+	self.x = self.x + self.vx * dtMod
+	self.y = self.y + self.vy * dtMod
+	
+	self.vx = self.vx * (0.95 ^ dtMod)
+	self.vy = self.vy * (0.95 ^ dtMod)
 	
 	-- check whether game entity is stuck in a tile
 	if self:collidesWithLevel(0, 0) then
@@ -92,48 +141,13 @@ function GameEntity:update(dtMod)
 			self.y = self.y - 8
 		end
 	end
-	]]
-	
-	local iterationCount = 0
-	local addX, addY = 0, 0
-	repeat
-		iterationCount = iterationCount + 1
-		local doRecheck = false
-		
-		if self:collidesWithLevel(-3 + addX, 4 + addY) or self:collidesWithLevel(3 + addX, 4 + addY) then
-			self.vy = 0
-			addY = addY - 0.1
-			doRecheck = true
-		end
-		if self:collidesWithLevel(-3 + addX, -4 + addY) or self:collidesWithLevel(3 + addX, -4 + addY) then
-			self.vy = 0
-			addY = addY + 0.1
-			doRecheck = true
-		end
-		if self:collidesWithLevel(-4 + addX, -3 + addY) or self:collidesWithLevel(-4 + addX, 3 + addY) then
-			self.vx = 0
-			addX = addX + 0.1
-			doRecheck = true
-		end
-		if self:collidesWithLevel(4 + addX, -3 + addY) or self:collidesWithLevel(4 + addX, 3 + addY) then
-			self.vx = 0
-			addX = addX - 0.1
-			doRecheck = true
-		end
-	until (not doRecheck) or iterationCount > 8
-	self.x = self.x + addX
-	self.y = self.y + addY
-	
-	self.x = self.x + self.vx * dtMod
-	self.y = self.y + self.vy * dtMod
-	
-	self.vx = self.vx * (0.95 ^ dtMod)
-	self.vy = self.vy * (0.95 ^ dtMod)
 end
 
 -- draw single object
 function GameEntity:draw()
-	love.graphics.rectangle("fill", self.x - 4, self.y - 4, 8, 8)
+	local drawX = math.floor(self.x + 0.5)
+	local drawY = math.floor(self.y + 0.5)
+	love.graphics.rectangle("fill", drawX - 4, drawY - 4, 8, 8)
 end
 
 --****************

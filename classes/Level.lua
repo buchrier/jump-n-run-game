@@ -13,8 +13,10 @@ Level_meta = {
 	__index = Level
 }
 
+Level.settings = {}
 -- tiles should always be square, so we only need one value
-Level.tileSize = 8
+Level.settings.tileSize = 8
+Level.settings.enableLOD = true
 
 --****************
 --[[
@@ -57,6 +59,7 @@ end
 function Level:draw(viewportX, viewportY, viewportWidth, viewportHeight)
 	local simplify = math.floor(math.sqrt(viewportWidth / 2^9) * 3) - 3
 	simplify = simplify < 1 and 1 or simplify
+	if not Level.settings.enableLOD then simplify = 1 end
 	
 	local view_1x = math.floor(viewportX / 8 + simplify)
 	local view_1y = math.floor(viewportY / 8 + simplify)
@@ -68,7 +71,7 @@ function Level:draw(viewportX, viewportY, viewportWidth, viewportHeight)
 			local tileData = levelTiles[self:getTile(x, y)]
 			if tileData and tileData.graphic then
 				if not tileData.quads then
-					love.graphics.draw(tileData.graphic, (x - 1) * Level.tileSize, (y - 1) * Level.tileSize)
+					love.graphics.draw(tileData.graphic, (x - 1) * Level.settings.tileSize, (y - 1) * Level.settings.tileSize)
 				else
 					local neighbors = {}
 					for _x = -1, 1 do
@@ -113,7 +116,7 @@ function Level:draw(viewportX, viewportY, viewportWidth, viewportHeight)
 						usedQuad = tileData.quads.single
 					end
 					
-					love.graphics.draw(tileData.graphic, usedQuad, (x - 1) * Level.tileSize, (y - 1) * Level.tileSize, 0, simplify, simplify)
+					love.graphics.draw(tileData.graphic, usedQuad, (x - 1) * Level.settings.tileSize, (y - 1) * Level.settings.tileSize, 0, simplify, simplify)
 				end
 			end
 		end
